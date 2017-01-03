@@ -1,16 +1,40 @@
-'use strict';
+const path = require('path');
+const fs = require('fs');
+const childProcess = require('child_process');
 
-module.exports.hello = (event, context, callback) => {
-  const response = {
-    statusCode: 200,
-    body: JSON.stringify({
-      message: 'Go Serverless v1.0! Your function executed successfully!',
-      input: event,
-    }),
+function runCasper(scriptName, event, callback) {
+  const casperPath = path.join(__dirname, 'node_modules', 'casperjs', 'bin', 'casperjs');
+  const childArgs = [
+    path.join(__dirname, scriptName)
+  ];
+  const childOptions = {
+    'PHANTOMJS_EXECUTABLE':
+      path.join(__dirname, 'libs', 'phantomjs'),
+      // MARK: phantomjs: cannot execute binary file
+      // path.join(__dirname, 'node_modules', 'phantomjs', 'bin', 'phantomjs')
+    CLIENT: event.client,
+    USER: event.user,
+    PASSWORD: event.password,
+    STATUS: event.status,
   };
+  process.env['PATH'] = process.env['PATH'] + ':' + process.env['LAMBDA_TASK_ROOT'];
+  const ps = childProcess.execFile(casperPath, childArgs, { env: childOptions });
 
-  callback(null, response);
+  ps.stdout.on('data', function (data) {
+    console.log(data);
+  });
 
-  // Use this code if you don't use the http event with the LAMBDA-PROXY integration
-  // callback(null, { message: 'Go Serverless v1.0! Your function executed successfully!', event });
+  ps.stderr.on('data', function (data) {
+    console.error(data);
+    callback(data);
+  });
+
+  ps.on('exit', function(code) {
+    console.log('child process exited with code ' + code);
+    callback(null, { statusCode: code });
+  });
+}
+
+module.exports.beat = (event, context, callback) => {
+  runCasper('index.js', event, callback);
 };
