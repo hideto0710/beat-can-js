@@ -9,6 +9,7 @@ function EmployeePage(casper) {
 
   const Attend = 1;
   const Leave = -1;
+  const Toggle = 0;
 
   this.checkPage = function() {
     this.casper.then(function() {
@@ -51,6 +52,7 @@ function EmployeePage(casper) {
   };
 
   function compareStatus(currentStatus, requestStatus) {
+    if (requestStatus === Toggle) return true;
     switch (currentStatus) {
       case NotYet:
         return requestStatus === Attend;
